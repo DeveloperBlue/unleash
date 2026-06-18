@@ -1,0 +1,199 @@
+# Syncs upstream Unleash releases into this fork and publishes a private GHCR image.
+#
+# Setup (one-time):
+#   1. Create a private GitHub repo and push this fork's main branch to it.
+#   2. Ensure your fork customizations are committed on main.
+#   3. Settings → Actions → General → Workflow permissions → "Read and write permissions".
+#
+# Images are published to: ghcr.io/<owner>/<repo>
+# Tags: <version>, latest (for non-prerelease upstream versions)
+
+name: Sync upstream release and build
+
+concurrency:
+  group: fork-sync-and-build
+  cancel-in-progress: false
+
+on:
+  schedule:
+    # Check for new upstream releases once per day
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Upstream version to sync (e.g. 8.0.1). Leave empty for latest release.'
+        required: false
+        type: string
+      force_rebuild:
+        description: 'Rebuild even if this version was already synced'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  UPSTREAM_REPO: Unleash/unleash
+  REGISTRY: ghcr.io
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      should_sync: ${{ steps.resolve.outputs.should_sync }}
+      should_build: ${{ steps.resolve.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve upstream release version
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+          FORCE_REBUILD: ${{ inputs.force_rebuild }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            TAG="v${VERSION}"
+          else
+            TAG="$(gh api "repos/${UPSTREAM_REPO}/releases/latest" --jq '.tag_name')"
+            VERSION="${TAG#v}"
+          fi
+
+          if ! gh api "repos/${UPSTREAM_REPO}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::Upstream tag ${TAG} not found in ${UPSTREAM_REPO}"
+            exit 1
+          fi
+
+          SYNCED_TAG="synced/${TAG}"
+          ALREADY_SYNCED=false
+          if git rev-parse "$SYNCED_TAG" >/dev/null 2>&1; then
+            ALREADY_SYNCED=true
+          fi
+
+          SHOULD_SYNC=false
+          SHOULD_BUILD=false
+
+          if [ "$ALREADY_SYNCED" = "false" ]; then
+            SHOULD_SYNC=true
+            SHOULD_BUILD=true
+          elif [ "$FORCE_REBUILD" = "true" ]; then
+            SHOULD_BUILD=true
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "should_sync=${SHOULD_SYNC}" >> "$GITHUB_OUTPUT"
+          echo "should_build=${SHOULD_BUILD}" >> "$GITHUB_OUTPUT"
+          echo "Upstream release: ${TAG}, should_sync=${SHOULD_SYNC}, should_build=${SHOULD_BUILD}"
+
+  sync-upstream:
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_sync == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream release tag
+        env:
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+        run: |
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch upstream "refs/tags/${TAG}:refs/tags/${TAG}"
+
+      - name: Merge upstream release into fork main
+        env:
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git merge "${TAG}" -m "chore: merge upstream ${TAG}"
+
+      - name: Push synced main and tag
+        env:
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+        run: |
+          git push origin main
+          git tag -f "synced/${TAG}"
+          git push origin "synced/${TAG}" --force
+
+  build-and-publish:
+    needs:
+      - resolve-version
+      - sync-upstream
+    if: |
+      always() &&
+      needs.resolve-version.outputs.should_build == 'true' &&
+      (needs.sync-upstream.result == 'success' || needs.sync-upstream.result == 'skipped')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.resolve-version.outputs.version }}
+            type=raw,value=latest,enable=${{ !contains(needs.resolve-version.outputs.version, '-') }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=fork-docker
+          cache-to: type=gha,mode=max,scope=fork-docker
+
+  notify-skipped:
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_build != 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          echo "Upstream ${{ needs.resolve-version.outputs.tag }} is already synced."
+          echo "Use workflow_dispatch with force_rebuild=true to rebuild."
+
+  notify-merge-failure:
+    needs:
+      - resolve-version
+      - sync-upstream
+    if: needs.resolve-version.outputs.should_sync == 'true' && needs.sync-upstream.result == 'failure'
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          echo "::error::Failed to merge upstream ${{ needs.resolve-version.outputs.tag }} into main."
+          echo "Resolve merge conflicts locally, push to main, then re-run with force_rebuild=true."
