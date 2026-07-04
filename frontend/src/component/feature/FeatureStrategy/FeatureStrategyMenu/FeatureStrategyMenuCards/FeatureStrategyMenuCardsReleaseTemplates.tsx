@@ -14,7 +14,7 @@ import {
 import { FeatureStrategyMenuCard } from '../FeatureStrategyMenuCard/FeatureStrategyMenuCard.tsx';
 import { FeatureStrategyMenuCardAction } from '../FeatureStrategyMenuCard/FeatureStrategyMenuCardAction.tsx';
 import { FeatureStrategyMenuCardIcon } from '../FeatureStrategyMenuCard/FeatureStrategyMenuCardIcon.tsx';
-import { usePlausibleTracker } from 'hooks/usePlausibleTracker.ts';
+import { useEventTracker } from 'hooks/useEventTracker.ts';
 import { useHasRootAccess } from 'hooks/useHasAccess.ts';
 import { RELEASE_PLAN_TEMPLATE_CREATE } from '@server/types/permissions.ts';
 import { Dialogue } from 'component/common/Dialogue/Dialogue.tsx';
@@ -101,7 +101,7 @@ export const FeatureStrategyMenuCardsReleaseTemplates = ({
 }: IFeatureStrategyMenuCardsReleaseTemplatesProps) => {
     const { isEnterprise } = useUiConfig();
     const { templates } = useReleasePlanTemplates();
-    const { trackEvent } = usePlausibleTracker();
+    const { trackEvent } = useEventTracker();
     const canCreateTemplate = useHasRootAccess(RELEASE_PLAN_TEMPLATE_CREATE);
 
     const [noAccessDialogOpen, setNoAccessDialogOpen] =
@@ -152,7 +152,7 @@ export const FeatureStrategyMenuCardsReleaseTemplates = ({
                             to='/release-templates/create-template'
                             startIcon={<AddIcon />}
                             onClick={handleLinkClick}
-                            size='small'
+                            size='medium'
                         >
                             New template
                         </Button>
@@ -160,7 +160,7 @@ export const FeatureStrategyMenuCardsReleaseTemplates = ({
                         <Button
                             startIcon={<AddIcon />}
                             onClick={handleNoAccessClick}
-                            size='small'
+                            size='medium'
                         >
                             New template
                         </Button>

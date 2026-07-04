@@ -19,6 +19,7 @@ import {
 import version from '../util/version.js';
 import type { ResourceLimitsService } from '../features/resource-limits/resource-limits-service.js';
 import { ImpactMetricsAvailabilityResolver } from '../features/metrics/impact/impact-metrics-availability.js';
+import { hashValue } from '../util/anonymise.js';
 
 export class UiConfigService {
     private config: IUnleashConfig;
@@ -101,8 +102,10 @@ export class UiConfigService {
             simpleAuthSettings?.disabled ||
             this.config.authentication.type === IAuthType.NONE;
 
+        const hashedEmail = user.email ? hashValue(user.email) : undefined;
+
         const expFlags = this.config.flagResolver.getAll({
-            email: user.email,
+            email: hashedEmail,
         });
 
         const flags = {
@@ -112,7 +115,7 @@ export class UiConfigService {
 
         const unleashContext = {
             ...this.flagResolver.getStaticContext(),
-            email: user.email,
+            ...(hashedEmail ? { email: hashedEmail } : {}),
             userId: user.id,
         };
         const uiConfig: UiConfigSchema = {

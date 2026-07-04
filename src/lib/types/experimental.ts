@@ -65,6 +65,8 @@ export type IFlagKey =
     | 'newInUnleash'
     | 'oidcPkceSupport'
     | 'flightRecorderSdk'
+    | 'flightRecorderAdminEvents'
+    | 'flightRecorderFrontend'
     | 'regexConstraintOperator'
     | 'enterpriseEdgeTokensList'
     | 'impactMetricsFlagPage'
@@ -79,7 +81,10 @@ export type IFlagKey =
     | 'allowDeprecatedApiTokenMiddleware'
     | 'newProfileDropdown'
     | 'hideTopmenuDocumentation'
-    | 'learningLab';
+    | 'serviceNowIntegration'
+    | 'learningLab'
+    | 'accessRequestsNotifications'
+    | 'accessRequestsMenuIndicator';
 
 export type IFlags = Partial<{ [key in IFlagKey]: boolean | Variant }>;
 
@@ -300,6 +305,23 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_FLIGHT_RECORDER_SDK,
         false,
     ),
+    flightRecorderAdminEvents: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_FLIGHT_RECORDER_ADMIN_EVENTS,
+        false,
+    ),
+    flightRecorderFrontend: {
+        name: 'flightRecorderFrontend',
+        enabled: parseEnvVarBoolean(
+            process.env.UNLEASH_EXPERIMENTAL_FLIGHT_RECORDER_FRONTEND,
+            false,
+        ),
+        payload: {
+            type: PayloadType.STRING,
+            value:
+                process.env.UNLEASH_EXPERIMENTAL_FLIGHT_RECORDER_FRONTEND_URL ??
+                '',
+        },
+    },
     regexConstraintOperator: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_REGEX_CONSTRAINT_OPERATOR,
         false,
@@ -364,6 +386,18 @@ const flags: IFlags = {
             value: process.env.UNLEASH_EXPERIMENTAL_LEARNING_LAB_PAYLOAD ?? '',
         },
     },
+    serviceNowIntegration: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_SERVICE_NOW_INTEGRATION,
+        false,
+    ),
+    accessRequestsNotifications: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_ACCESS_REQUESTS_NOTIFICATIONS,
+        false,
+    ),
+    accessRequestsMenuIndicator: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_ACCESS_REQUESTS_MENU_INDICATOR,
+        false,
+    ),
 };
 
 export const defaultExperimentalOptions: IExperimentalOptions = {

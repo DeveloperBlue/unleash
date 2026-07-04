@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type KeyboardEvent, type MouseEvent, useState } from 'react';
 import { Menu, MenuItem, styled } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
 import { basePath } from 'utils/formatPath';
@@ -73,17 +73,57 @@ const ThemeSubmenu = ({ onCloseAll }: { onCloseAll: () => void }) => {
     const { themeMode, setThemeMode } = useThemeMode();
     const open = Boolean(anchorEl);
 
+    const openSubmenu = (event: MouseEvent<HTMLElement>) =>
+        setAnchorEl(event.currentTarget);
+    const closeSubmenu = () => setAnchorEl(null);
+
     const handleSelect = (mode: themeMode) => {
         setThemeMode(mode);
         setAnchorEl(null);
         onCloseAll();
     };
 
+    // support keyboard accessibility by manually moving focus between the options with up/down arrows,
+    // and go back to the main menu (Theme trigger) with left arrow or escape
+    const handleOptionKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            event.stopPropagation();
+            const trigger = anchorEl;
+            closeSubmenu();
+            trigger?.focus();
+            return;
+        }
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        event.preventDefault();
+        event.stopPropagation();
+        const item = event.currentTarget;
+        const parent = item.parentElement;
+        if (!parent) {
+            return;
+        }
+        const next =
+            event.key === 'ArrowDown'
+                ? (item.nextElementSibling ?? parent.firstElementChild)
+                : (item.previousElementSibling ?? parent.lastElementChild);
+        (next as HTMLElement)?.focus();
+    };
+
+    // right arrow opens the submenu (mirrors left arrow closing it)
+    const handleTriggerKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
+        if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            setAnchorEl(event.currentTarget);
+        }
+    };
+
     return (
         <>
             <MenuItem
-                onClick={(event) => setAnchorEl(event.currentTarget)}
-                onMouseEnter={(event) => setAnchorEl(event.currentTarget)}
+                onClick={openSubmenu}
+                onMouseEnter={openSubmenu}
+                onMouseLeave={closeSubmenu}
+                onKeyDown={handleTriggerKeyDown}
                 sx={menuItemSx}
                 aria-haspopup='true'
                 aria-expanded={open}
@@ -94,16 +134,16 @@ const ThemeSubmenu = ({ onCloseAll }: { onCloseAll: () => void }) => {
             <Menu
                 anchorEl={anchorEl}
                 open={open}
-                onClose={() => {
-                    setAnchorEl(null);
-                    onCloseAll();
-                }}
+                onClose={closeSubmenu}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'left' }}
                 slotProps={{
+                    root: { sx: { pointerEvents: 'none' } },
                     paper: {
-                        onMouseLeave: () => setAnchorEl(null),
+                        onMouseLeave: closeSubmenu,
+                        onMouseEnter: openSubmenu,
                         sx: {
+                            pointerEvents: 'auto',
                             minWidth: (theme) => theme.spacing(15),
                             borderRadius: (theme) =>
                                 theme.shape.borderRadiusSmall,
@@ -115,6 +155,7 @@ const ThemeSubmenu = ({ onCloseAll }: { onCloseAll: () => void }) => {
                     <MenuItem
                         key={option.value}
                         onClick={() => handleSelect(option.value)}
+                        onKeyDown={handleOptionKeyDown}
                         sx={menuItemSx}
                     >
                         <StyledCheckSlot>

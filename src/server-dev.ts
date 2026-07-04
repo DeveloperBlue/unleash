@@ -63,6 +63,9 @@ process.nextTick(async () => {
                         newProfileDropdown: true,
                         hideTopmenuDocumentation: true,
                         learningLab: true,
+                        serviceNowIntegration: true,
+                        accessRequestsNotifications: true,
+                        accessRequestsMenuIndicator: true,
                     },
                 },
                 authentication: {

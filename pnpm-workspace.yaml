@@ -24,7 +24,9 @@ trustPolicyExclude:
 minimumReleaseAge: 10080
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  - 'unleash-client'
   - '@unleash/proxy-client-react'
+  - '@unleash/sdk-flight-recorder'
   # Renovate security update: esbuild@0.28.1
   - '@esbuild/aix-ppc64@0.28.1'
   - '@esbuild/android-arm@0.28.1'
@@ -57,6 +59,8 @@ minimumReleaseAgeExclude:
   - form-data@4.0.6
   # Renovate security update: js-yaml@4.2.0
   - js-yaml@4.2.0
+  # Renovate security update: http-proxy-middleware@3.0.7
+  - http-proxy-middleware@3.0.7
 
 patchedDependencies:
   # Fixes a bug in getAutoSortingFn where `.slice(10)` skips the first 10 rows

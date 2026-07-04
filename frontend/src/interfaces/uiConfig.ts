@@ -101,6 +101,9 @@ export type UiFlags = {
     newProfileDropdown?: boolean;
     hideTopmenuDocumentation?: boolean;
     learningLab?: Variant;
+    accessRequestsNotifications?: boolean;
+    flightRecorderFrontend?: Variant;
+    accessRequestsMenuIndicator?: boolean;
 };
 
 export interface IVersionInfo {

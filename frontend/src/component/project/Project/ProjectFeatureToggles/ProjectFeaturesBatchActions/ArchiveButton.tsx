@@ -3,7 +3,7 @@ import { Button } from '@mui/material';
 import { PermissionHOC } from 'component/common/PermissionHOC/PermissionHOC';
 import { DELETE_FEATURE } from 'component/providers/AccessProvider/permissions';
 import { FeatureArchiveDialog } from 'component/common/FeatureArchiveDialog/FeatureArchiveDialog';
-import { usePlausibleTracker } from 'hooks/usePlausibleTracker';
+import { useEventTracker } from 'hooks/useEventTracker';
 import type { FeatureSchema } from 'openapi';
 import { addDays, isBefore } from 'date-fns';
 
@@ -30,7 +30,7 @@ export const ArchiveButton: FC<IArchiveButtonProps> = ({
     onConfirm,
 }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const { trackEvent } = usePlausibleTracker();
+    const { trackEvent } = useEventTracker();
 
     const featuresWithUsage = useMemo(() => {
         return featureIds.filter((name) => {
@@ -57,7 +57,7 @@ export const ArchiveButton: FC<IArchiveButtonProps> = ({
                         <Button
                             disabled={!hasAccess || isDialogOpen}
                             variant='outlined'
-                            size='small'
+                            size='medium'
                             onClick={() => setIsDialogOpen(true)}
                         >
                             Archive
