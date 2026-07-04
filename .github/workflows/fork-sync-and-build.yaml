@@ -4,6 +4,9 @@
 #   1. Create a private GitHub repo and push this fork's main branch to it.
 #   2. Ensure your fork customizations are committed on main.
 #   3. Settings → Actions → General → Workflow permissions → "Read and write permissions".
+#   4. Create a classic PAT with repo + workflow scopes (or fine-grained with
+#      Contents and Workflows write on this repo). Add it as secret GH_PUSH_TOKEN.
+#      Required because pushes that change .github/workflows/ cannot use GITHUB_TOKEN.
 #
 # Only fork-sync-and-build.yaml and build_coverage.yaml are kept after each upstream sync.
 #
@@ -39,7 +42,6 @@ env:
 permissions:
   contents: write
   packages: write
-  workflows: write
 
 jobs:
   resolve-version:
@@ -107,6 +109,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          token: ${{ secrets.GH_PUSH_TOKEN }}
 
       - name: Configure git
         run: |
