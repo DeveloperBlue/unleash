@@ -4,7 +4,8 @@
 #   1. Create a private GitHub repo and push this fork's main branch to it.
 #   2. Ensure your fork customizations are committed on main.
 #   3. Settings → Actions → General → Workflow permissions → "Read and write permissions".
-#      (This workflow also needs workflows: write to push upstream workflow file changes.)
+#
+# Only fork-sync-and-build.yaml and build_coverage.yaml are kept after each upstream sync.
 #
 # Images are published to: ghcr.io/<owner>/<repo>
 # Tags: <version>, latest (for non-prerelease upstream versions)
@@ -125,6 +126,36 @@ jobs:
         run: |
           set -euo pipefail
           git merge "${TAG}" -m "chore: merge upstream ${TAG}"
+
+      - name: Prune upstream workflow files
+        run: |
+          set -euo pipefail
+          KEEP_WORKFLOWS=(
+            fork-sync-and-build.yaml
+            build_coverage.yaml
+          )
+
+          for workflow in .github/workflows/*; do
+            [ -e "$workflow" ] || continue
+            name="$(basename "$workflow")"
+            keep=false
+            for allowed in "${KEEP_WORKFLOWS[@]}"; do
+              if [ "$name" = "$allowed" ]; then
+                keep=true
+                break
+              fi
+            done
+            if [ "$keep" = false ]; then
+              git rm -f "$workflow"
+            fi
+          done
+
+          # Always keep our sync workflow from the pre-merge fork branch
+          git checkout HEAD^1 -- .github/workflows/fork-sync-and-build.yaml
+
+          if [ -n "$(git status --porcelain .github/workflows)" ]; then
+            git commit -m "chore: prune upstream workflow files"
+          fi
 
       - name: Push synced main and tag
         env:
