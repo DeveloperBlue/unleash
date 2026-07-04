@@ -330,11 +330,19 @@ export default class EnvironmentStore implements IEnvironmentStore {
     }
 
     async update(
-        env: Pick<IEnvironment, 'type' | 'protected' | 'requiredApprovals'>,
+        env: Pick<
+            IEnvironment,
+            'type' | 'protected' | 'requiredApprovals' | 'sortOrder'
+        >,
         name: string,
     ): Promise<IEnvironment> {
+        const { sortOrder, ...rest } = env;
+        const updateData = snakeCaseKeys(rest);
+        if (sortOrder !== undefined) {
+            updateData.sort_order = sortOrder;
+        }
         const updatedEnv = await this.db<IEnvironmentsTable>(TABLE)
-            .update(snakeCaseKeys(env))
+            .update(updateData)
             .where({ name, protected: false })
             .returning<IEnvironmentsTable>(COLUMNS);
 

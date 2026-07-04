@@ -1,5 +1,6 @@
 import { start } from './lib/server-impl.js';
 import { createConfig } from './lib/create-config.js';
+import { forkConfig, forkPreRouterHook } from './lib/fork/index.js';
 import { LogLevel } from './lib/logger.js';
 import { ApiTokenType } from './lib/types/model.js';
 
@@ -7,8 +8,10 @@ process.nextTick(async () => {
     try {
         await start(
             createConfig({
+                ...forkConfig,
+                preRouterHook: forkPreRouterHook,
                 db: process.env.DATABASE_URL
-                    ? undefined
+                    ? { ssl: false }
                     : {
                           user: 'unleash_user',
                           password: 'password',
