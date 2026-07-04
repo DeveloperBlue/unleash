@@ -128,7 +128,47 @@ jobs:
           TAG: ${{ needs.resolve-version.outputs.tag }}
         run: |
           set -euo pipefail
+          KEEP_WORKFLOWS=(
+            fork-sync-and-build.yaml
+            build_coverage.yaml
+          )
+
+          set +e
           git merge "${TAG}" -m "chore: merge upstream ${TAG}"
+          merge_status=$?
+          set -e
+
+          if [ "$merge_status" -ne 0 ]; then
+            if [ ! -f .git/MERGE_HEAD ]; then
+              echo "::error::Merge failed without entering merge state"
+              exit "$merge_status"
+            fi
+
+            # We delete upstream workflows on the fork; upstream may still modify them.
+            # Resolve those modify/delete conflicts by keeping our deletion.
+            while IFS= read -r workflow; do
+              [ -n "$workflow" ] || continue
+              name="$(basename "$workflow")"
+              keep=false
+              for allowed in "${KEEP_WORKFLOWS[@]}"; do
+                if [ "$name" = "$allowed" ]; then
+                  keep=true
+                  break
+                fi
+              done
+              if [ "$keep" = false ]; then
+                git rm -f "$workflow"
+              fi
+            done < <(git diff --name-only --diff-filter=UD .github/workflows || true)
+
+            if [ -n "$(git ls-files -u)" ]; then
+              echo "::error::Unresolved merge conflicts remain:"
+              git diff --name-only --diff-filter=U
+              exit 1
+            fi
+
+            git commit --no-edit
+          fi
 
       - name: Prune upstream workflow files
         run: |
