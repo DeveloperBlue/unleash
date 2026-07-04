@@ -4,6 +4,7 @@
 #   1. Create a private GitHub repo and push this fork's main branch to it.
 #   2. Ensure your fork customizations are committed on main.
 #   3. Settings → Actions → General → Workflow permissions → "Read and write permissions".
+#      (This workflow also needs workflows: write to push upstream workflow file changes.)
 #
 # Images are published to: ghcr.io/<owner>/<repo>
 # Tags: <version>, latest (for non-prerelease upstream versions)
@@ -37,6 +38,7 @@ env:
 permissions:
   contents: write
   packages: write
+  workflows: write
 
 jobs:
   resolve-version:
