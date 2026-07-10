@@ -3,6 +3,7 @@ import type { ReleasePlanTemplate } from './release-plan-template.js';
 import type { ReleasePlanMilestone } from './release-plan-milestone.js';
 import { CRUDStore, type CrudStoreConfig } from '../../db/crud/crud-store.js';
 import type { Row } from '../../db/crud/row-type.js';
+import type { Knex } from 'knex';
 import type { Db } from '../../db/db.js';
 import { NotFoundError } from '../../error/index.js';
 
@@ -19,6 +20,7 @@ const fromRow = (row: any): ReleasePlanTemplate => {
         name: row.name,
         createdAt: row.created_at,
         description: row.description,
+        project: row.project,
         discriminator: row.discriminator,
         createdByUserId: row.created_by_user_id,
     };
@@ -36,10 +38,42 @@ export class ReleasePlanTemplateStore extends CRUDStore<
     }
 
     override async getAll(): Promise<ReleasePlanTemplate[]> {
-        const endTimer = this.timer('getAll');
+        return this.getGlobalTemplates();
+    }
+
+    async getGlobalTemplates(): Promise<ReleasePlanTemplate[]> {
+        return this.getTemplates('getGlobalTemplates', (query) => {
+            query.whereNull('project');
+        });
+    }
+
+    async getProjectTemplates(project: string): Promise<ReleasePlanTemplate[]> {
+        return this.getTemplates('getProjectTemplates', (query) => {
+            query.where('project', project);
+        });
+    }
+
+    async getProjectAndGlobalTemplates(
+        project: string,
+    ): Promise<ReleasePlanTemplate[]> {
+        return this.getTemplates('getProjectAndGlobalTemplates', (query) => {
+            query
+                .where((qb) =>
+                    qb.whereNull('project').orWhere('project', project),
+                )
+                .orderBy('project', 'asc', 'last');
+        });
+    }
+
+    private async getTemplates(
+        timerName: string,
+        addProjectFilter: (query: Knex.QueryBuilder) => void,
+    ): Promise<ReleasePlanTemplate[]> {
+        const endTimer = this.timer(timerName);
         const templates = await this.db<ReleasePlanTemplate>(TABLE)
             .where('discriminator', 'template')
             .where('archived_at', null)
+            .modify(addProjectFilter)
             .orderBy('created_at');
         endTimer();
         return templates.map(({ milestones, ...template }) =>
@@ -82,6 +116,7 @@ export class ReleasePlanTemplateStore extends CRUDStore<
             discriminator: templateRows[0].templateDiscriminator,
             name: templateRows[0].templateName,
             description: templateRows[0].templateDescription,
+            project: templateRows[0].templateProject,
             createdByUserId: templateRows[0].templateCreatedByUserId,
             createdAt: templateRows[0].templateCreatedAt,
             milestones: templateRows.reduce(
@@ -163,6 +198,7 @@ export class ReleasePlanTemplateStore extends CRUDStore<
                 'rpd.discriminator AS templateDiscriminator',
                 'rpd.name AS templateName',
                 'rpd.description as templateDescription',
+                'rpd.project as templateProject',
                 'rpd.created_by_user_id as templateCreatedByUserId',
                 'rpd.created_at as templateCreatedAt',
                 'rpd.archived_at AS templateArchivedAt',

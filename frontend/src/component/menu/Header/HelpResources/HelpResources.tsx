@@ -16,20 +16,18 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import SlackIcon from 'assets/icons/menu/slack.svg?react';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import NewReleasesOutlinedIcon from '@mui/icons-material/NewReleasesOutlined';
 import LearningLabIcon from 'assets/icons/menu/learning-lab.svg?react';
+import { Link } from 'react-router';
 import { useFeedback } from 'component/feedbackNew/useFeedback';
 import { useEventTracker } from 'hooks/useEventTracker';
 import { useUiFlag } from 'hooks/useUiFlag';
 import { useVariant } from 'hooks/useVariant';
+import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
 
 const StyledIconButton = styled(IconButton)<{ open?: boolean }>(
     ({ theme, open }) => ({
         color: open ? theme.palette.primary.main : undefined,
-        '&:focus-visible': {
-            outlineStyle: 'solid',
-            outlineWidth: theme.spacing(0.5),
-            outlineColor: theme.palette.primary.main,
-        },
     }),
 );
 
@@ -45,6 +43,7 @@ interface AnchorMenuItemProps {
     href?: string;
     target?: string;
     rel?: string;
+    to?: string;
 }
 
 const StyledVisitLink = styled(Box)(({ theme }) => ({
@@ -152,6 +151,9 @@ export const HelpResources = () => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
     const { trackEvent } = useEventTracker();
+    const { isEnterprise } = useUiConfig();
+    const whatsNewEnabled = useUiFlag('whatsNewPage');
+    const showWhatsNew = isEnterprise() && whatsNewEnabled;
     const learningLabFlag = useUiFlag('learningLab');
     const learningLabVariant = useVariant<ILearningLabVariant>(
         learningLabFlag || undefined,
@@ -248,6 +250,16 @@ export const HelpResources = () => {
                         </StyledVisitLink>
                     </StyledLearningLabContent>
                 </StyledFeaturedMenuItem>
+                {showWhatsNew && (
+                    <StyledMenuItem
+                        component={Link}
+                        to='/whats-new'
+                        onClick={() => handleOptionClick('whats-new')}
+                    >
+                        <NewReleasesOutlinedIcon fontSize='small' />
+                        What's new
+                    </StyledMenuItem>
+                )}
                 <StyledMenuItem
                     component='a'
                     href={DOCUMENTATION_URL}

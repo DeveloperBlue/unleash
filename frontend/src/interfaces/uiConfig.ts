@@ -41,6 +41,7 @@ export interface IUiConfig {
     samlConfiguredThroughEnv?: boolean;
     maxSessionsCount?: number;
     unleashContext?: IMutableContext;
+    storiesPageEnabled?: boolean;
 }
 
 export type UiFlags = {
@@ -79,6 +80,7 @@ export type UiFlags = {
     flagCreator?: boolean;
     productivityReportEmail?: boolean;
     showUserDeviceCount?: boolean;
+    sessionInspector?: boolean;
     consumptionModel?: boolean;
     consumptionModelUI?: boolean;
     customMetrics?: boolean;
@@ -89,7 +91,10 @@ export type UiFlags = {
     oidcPkceSupport?: boolean;
     extendedUsageMetrics?: boolean;
     newInUnleash?: boolean | Variant;
+    whatsNewPage?: boolean;
+    flagListCreatedByFilter?: boolean;
     regexConstraintOperator?: boolean;
+    semverGteConstraintOperators?: boolean;
     signupDialog?: boolean;
     enterpriseEdgeTokensList?: boolean;
     impactMetricsFlagPage?: boolean;
@@ -99,11 +104,12 @@ export type UiFlags = {
     newModalDesign?: boolean;
     archiveInFlagsView?: boolean;
     newProfileDropdown?: boolean;
-    hideTopmenuDocumentation?: boolean;
     learningLab?: Variant;
     accessRequestsNotifications?: boolean;
     flightRecorderFrontend?: Variant;
     accessRequestsMenuIndicator?: boolean;
+    projectReleaseTemplates?: boolean;
+    topLabelInputs?: boolean;
 };
 
 export interface IVersionInfo {

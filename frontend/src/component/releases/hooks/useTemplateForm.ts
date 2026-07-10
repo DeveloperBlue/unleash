@@ -1,6 +1,4 @@
 import { createUuid } from 'utils/createUuid';
-import { useReleasePlanTemplates } from 'hooks/api/getters/useReleasePlanTemplates/useReleasePlanTemplates';
-import { useOptionalPathParam } from 'hooks/useOptionalPathParam';
 import type { IReleasePlanMilestonePayload } from 'interfaces/releasePlans';
 import { useEffect, useState } from 'react';
 
@@ -16,9 +14,6 @@ export const useTemplateForm = (
         { id: createUuid(), name: 'Milestone 1', sortOrder: 0 },
     ],
 ) => {
-    const templateId = useOptionalPathParam('templateId');
-    const { templates } = useReleasePlanTemplates();
-
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription);
     const [milestones, setMilestones] = useState(initialMilestones);
@@ -36,65 +31,49 @@ export const useTemplateForm = (
         setMilestones(initialMilestones);
     }, [initialMilestones.length]);
 
-    const validate = () => {
-        let valid = true;
+    const validate = (): Record<string, string> => {
+        const validationErrors: Record<string, string> = {};
 
         if (name.length === 0) {
-            setErrors((prev) => ({ ...prev, name: 'Name can not be empty.' }));
-            valid = false;
-        }
-
-        if (
-            templates.some(
-                (template) =>
-                    template.name === name && template.id !== templateId,
-            )
-        ) {
-            setErrors((prev) => ({
-                ...prev,
-                name: 'A template with this name already exists.',
-            }));
-            valid = false;
+            validationErrors.name = 'Name can not be empty.';
         }
 
         if (milestones.length === 0) {
-            setErrors((prev) => ({
-                ...prev,
-                milestones: 'At least one milestone is required.',
-            }));
-            valid = false;
+            validationErrors.milestones = 'At least one milestone is required.';
         }
 
-        const errors: Record<string, string> = {};
+        const milestoneErrors: Record<string, string> = {};
         const nameSet = new Set();
         milestones.forEach((m) => {
             if (!m.name || m.name.length === 0) {
-                errors[m.id] = 'Milestone must have a valid name.';
-                errors[`${m.id}_name`] = 'Milestone must have a valid name.';
+                milestoneErrors[m.id] = 'Milestone must have a valid name.';
+                milestoneErrors[`${m.id}_name`] =
+                    'Milestone must have a valid name.';
             }
 
             if (!m.strategies || m.strategies.length === 0) {
-                errors[m.id] = 'Milestone must have at least one strategy.';
+                milestoneErrors[m.id] =
+                    'Milestone must have at least one strategy.';
             }
 
             if (nameSet.has(m.name)) {
-                errors[m.id] = 'Milestone names must be unique.';
+                milestoneErrors[m.id] = 'Milestone names must be unique.';
             } else if (m.name) {
                 nameSet.add(m.name);
             }
         });
 
-        if (Object.keys(errors).length > 0) {
-            setErrors((prev) => ({
-                ...prev,
-                ...errors,
-                milestones:
-                    'All milestones must have unique names and at least one strategy each.',
-            }));
-            valid = false;
+        if (Object.keys(milestoneErrors).length > 0) {
+            Object.assign(validationErrors, milestoneErrors);
+            validationErrors.milestones =
+                'All milestones must have unique names and at least one strategy each.';
         }
 
-        return valid;
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors((prev) => ({ ...prev, ...validationErrors }));
+        }
+
+        return validationErrors;
     };
 
     const clearErrors = () => {
@@ -128,6 +107,7 @@ export const useTemplateForm = (
         milestones,
         setMilestones,
         errors,
+        setErrors,
         clearErrors,
         validate,
         getTemplatePayload,

@@ -47,6 +47,7 @@ export type IFlagKey =
     | 'productivityReportEmail'
     | 'productivityReportUnsubscribers'
     | 'showUserDeviceCount'
+    | 'sessionInspector'
     | 'memorizeStats'
     | 'streaming'
     | 'denyStreamingForNonEdge'
@@ -63,11 +64,13 @@ export type IFlagKey =
     | 'optimizeLifecycle'
     | 'plausibleMetrics'
     | 'newInUnleash'
+    | 'whatsNewPage'
     | 'oidcPkceSupport'
     | 'flightRecorderSdk'
     | 'flightRecorderAdminEvents'
     | 'flightRecorderFrontend'
     | 'regexConstraintOperator'
+    | 'semverGteConstraintOperators'
     | 'enterpriseEdgeTokensList'
     | 'impactMetricsFlagPage'
     | 'userTokenWithClientApiLoggingKillSwitch'
@@ -80,11 +83,13 @@ export type IFlagKey =
     | 'archiveInFlagsView'
     | 'allowDeprecatedApiTokenMiddleware'
     | 'newProfileDropdown'
-    | 'hideTopmenuDocumentation'
     | 'serviceNowIntegration'
     | 'learningLab'
     | 'accessRequestsNotifications'
-    | 'accessRequestsMenuIndicator';
+    | 'accessRequestsMenuIndicator'
+    | 'projectReleaseTemplates'
+    | 'topLabelInputs'
+    | 'flagListCreatedByFilter';
 
 export type IFlags = Partial<{ [key in IFlagKey]: boolean | Variant }>;
 
@@ -243,6 +248,10 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_SHOW_USER_DEVICE_COUNT,
         false,
     ),
+    sessionInspector: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_SESSION_INSPECTOR,
+        false,
+    ),
     deltaApi: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_DELTA_API,
         false,
@@ -261,6 +270,14 @@ const flags: IFlags = {
     ),
     impactViews: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_IMPACT_VIEWS,
+        false,
+    ),
+    whatsNewPage: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_WHATS_NEW_PAGE,
+        false,
+    ),
+    flagListCreatedByFilter: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_FLAG_LIST_CREATED_BY_FILTER,
         false,
     ),
     registerImpactMetrics: parseEnvVarBoolean(
@@ -326,6 +343,10 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_REGEX_CONSTRAINT_OPERATOR,
         false,
     ),
+    semverGteConstraintOperators: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_SEMVER_GTE_CONSTRAINT_OPERATORS,
+        false,
+    ),
     enterpriseEdgeTokensList: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_ENTERPRISE_EDGE_TOKENS_LIST,
         false,
@@ -371,10 +392,6 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_NEW_PROFILE_DROPDOWN,
         false,
     ),
-    hideTopmenuDocumentation: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_HIDE_TOPMENU_DOCUMENTATION,
-        false,
-    ),
     learningLab: {
         name: 'learningLab',
         enabled: parseEnvVarBoolean(
@@ -396,6 +413,14 @@ const flags: IFlags = {
     ),
     accessRequestsMenuIndicator: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_ACCESS_REQUESTS_MENU_INDICATOR,
+        false,
+    ),
+    projectReleaseTemplates: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_PROJECT_RELEASE_TEMPLATES,
+        false,
+    ),
+    topLabelInputs: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_TOP_LABEL_INPUTS,
         false,
     ),
 };

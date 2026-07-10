@@ -672,6 +672,11 @@ export default class ProjectFeaturesController extends Controller {
     ): Promise<void> {
         const { projectId, featureName } = req.params;
         const { name, replaceGroupId } = req.body;
+        await this.featureService.validateFeatureBelongsToProject(
+            { featureName, projectId },
+            false,
+        );
+
         const created =
             await this.transactionalFeatureToggleService.transactional(
                 (service) =>
@@ -1083,7 +1088,6 @@ export default class ProjectFeaturesController extends Controller {
         if (!req.body.segmentIds) {
             req.body.segmentIds = [];
         }
-
         const updatedStrategy =
             await this.transactionalFeatureToggleService.transactional(
                 (service) =>
@@ -1106,7 +1110,16 @@ export default class ProjectFeaturesController extends Controller {
         const { strategyId, projectId, environment, featureName } = req.params;
         const patch = req.body;
         const strategy = await this.featureService.getStrategy(strategyId);
-
+        const strategyBelongsToFeature =
+            await this.featureService.strategyBelongsToFeatureAndProject({
+                strategyId,
+                project: projectId,
+                featureName,
+            });
+        if (!strategyBelongsToFeature) {
+            res.status(403).end();
+            return;
+        }
         const { newDocument } = applyPatch(strategy, patch);
 
         throwOnInvalidSchema(featureStrategySchema.$id, newDocument);
@@ -1131,9 +1144,19 @@ export default class ProjectFeaturesController extends Controller {
         res: Response<FeatureStrategySchema>,
     ): Promise<void> {
         this.logger.info('Getting strategy');
-        const { strategyId } = req.params;
+        const { strategyId, featureName, projectId } = req.params;
         this.logger.info(strategyId);
         const strategy = await this.featureService.getStrategy(strategyId);
+        const strategyBelongsToFeature =
+            await this.featureService.strategyBelongsToFeatureAndProject({
+                strategyId,
+                project: projectId,
+                featureName,
+            });
+        if (!strategyBelongsToFeature) {
+            res.status(403).end();
+            return;
+        }
         res.status(200).json(strategy);
     }
 
@@ -1159,11 +1182,13 @@ export default class ProjectFeaturesController extends Controller {
     }
 
     async updateFeaturesTags(
-        req: IAuthRequest<void, void, TagsBulkAddSchema>,
+        req: IAuthRequest<ProjectParam, void, TagsBulkAddSchema>,
         res: Response<TagSchema>,
     ): Promise<void> {
+        const { projectId } = req.params;
         const { features, tags } = req.body;
         await this.featureTagService.updateTags(
+            projectId,
             features,
             tags.addedTags,
             tags.removedTags,

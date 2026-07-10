@@ -1,5 +1,8 @@
 import { Button, styled, Typography } from '@mui/material';
-import { RELEASE_PLAN_TEMPLATE_CREATE } from '@server/types/permissions';
+import {
+    RELEASE_PLAN_TEMPLATE_CREATE,
+    UPDATE_PROJECT_RELEASE_TEMPLATE,
+} from '@server/types/permissions';
 import ReleaseTemplateIcon from 'assets/img/releaseTemplates.svg?react';
 import PermissionButton from 'component/common/PermissionButton/PermissionButton';
 import { Link, useNavigate } from 'react-router';
@@ -23,7 +26,13 @@ const Buttons = styled('div')(({ theme }) => ({
     justifyContent: 'center',
 }));
 
-export const EmptyTemplatesListMessage = () => {
+export const EmptyTemplatesListMessage = ({
+    createPath = '/release-templates/create-template',
+    projectId,
+}: {
+    createPath?: string;
+    projectId?: string;
+}) => {
     const navigate = useNavigate();
     return (
         <Container>
@@ -55,9 +64,13 @@ export const EmptyTemplatesListMessage = () => {
                 <PermissionButton
                     sx={{ whiteSpace: 'nowrap' }}
                     onClick={() => {
-                        navigate('/release-templates/create-template');
+                        navigate(createPath);
                     }}
-                    permission={RELEASE_PLAN_TEMPLATE_CREATE}
+                    permission={[
+                        RELEASE_PLAN_TEMPLATE_CREATE,
+                        UPDATE_PROJECT_RELEASE_TEMPLATE,
+                    ]}
+                    projectId={projectId}
                 >
                     New template
                 </PermissionButton>

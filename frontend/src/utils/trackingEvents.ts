@@ -88,4 +88,14 @@ export type CustomEvents =
     | 'remote-mcp'
     | 'external-impact-metrics'
     | 'help-resources'
-    | 'access-requests-notification';
+    | 'access-requests-notification'
+    | 'whats-new-page';
+
+// Flight recorder uses these reserved names internally; they are not available for custom events.
+export const RESERVED_EVENT_NAMES = {
+    pageView: 'pageview',
+    pageLeave: 'pageleave',
+} as const;
+
+export type ReservedEventName =
+    (typeof RESERVED_EVENT_NAMES)[keyof typeof RESERVED_EVENT_NAMES];

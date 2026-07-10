@@ -70,6 +70,7 @@ import NotFoundError from '../../error/notfound-error.js';
 import type {
     FeatureConfigurationClient,
     IFeatureStrategiesStore,
+    StrategyBelongsToFeatureAndProjectParams,
 } from './types/feature-toggle-strategies-store-type.js';
 import { DEFAULT_ENV } from '../../util/index.js';
 import type { Operation } from 'fast-json-patch';
@@ -276,18 +277,18 @@ export class FeatureToggleService {
         }
     }
 
-    async validateFeatureBelongsToProject({
-        featureName,
-        projectId,
-    }: IFeatureContext): Promise<void> {
+    async validateFeatureBelongsToProject(
+        { featureName, projectId }: IFeatureContext,
+        exposeExistingFeature: boolean = true,
+    ): Promise<void> {
         const id = await this.featureToggleStore.getProjectId(featureName);
 
         if (id !== projectId) {
             throw new NotFoundError(
                 `There's no feature named "${featureName}" in project "${projectId}"${
-                    id === undefined
-                        ? '.'
-                        : `, but there's a feature with that name in project "${id}"`
+                    id !== undefined && exposeExistingFeature
+                        ? `, but there's a feature with that name in project "${id}"`
+                        : '.'
                 }`,
             );
         }
@@ -547,7 +548,14 @@ export class FeatureToggleService {
             .map((strategy) => strategy.id);
 
         const eventPreData: StrategyIds = { strategyIds: existingOrder };
-
+        const allSortOrdersAreAlreadyKnown = sortOrders.every(({ id }) =>
+            existingOrder.includes(id),
+        );
+        if (!allSortOrdersAreAlreadyKnown) {
+            throw new BadDataError(
+                'trying to change strategies for environment via update sortOrder',
+            );
+        }
         await Promise.all(
             sortOrders.map(({ id, sortOrder }) =>
                 this.featureStrategiesStore.updateSortOrder(id, sortOrder),
@@ -1455,7 +1463,6 @@ export class FeatureToggleService {
 
         return created;
     }
-
     private async validateCloneFeaturePermissions(
         projectId: string,
         environments: FeatureToggleWithEnvironment['environments'],
@@ -1551,7 +1558,13 @@ export class FeatureToggleService {
             environment,
         );
     }
-
+    async strategyBelongsToFeatureAndProject(
+        params: StrategyBelongsToFeatureAndProjectParams,
+    ): Promise<boolean> {
+        return this.featureStrategiesStore.strategyBelongsToFeatureAndProject(
+            params,
+        );
+    }
     async getStrategy(strategyId: string): Promise<Saved<IStrategyConfig>> {
         const strategy =
             await this.featureStrategiesStore.getStrategyById(strategyId);

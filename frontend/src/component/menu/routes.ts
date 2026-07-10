@@ -51,6 +51,7 @@ import { Application } from 'component/application/Application';
 import { Signals } from 'component/signals/Signals';
 import { LazyCreateProject } from '../project/Project/CreateProject/LazyCreateProject.jsx';
 import { PersonalDashboard } from '../personalDashboard/PersonalDashboard.jsx';
+import { WhatsNewPage } from 'component/whatsNew/WhatsNewPage';
 import { ReleaseManagement } from 'component/releases/ReleaseManagement/ReleaseManagement';
 import { CreateReleasePlanTemplate } from 'component/releases/ReleasePlanTemplate/CreateReleasePlanTemplate';
 import { EditReleasePlanTemplate } from 'component/releases/ReleasePlanTemplate/EditReleasePlanTemplate';
@@ -76,6 +77,16 @@ export const routes: IRoute[] = [
         component: PersonalDashboard,
         type: 'protected',
         menu: { primary: true },
+    },
+    {
+        path: '/whats-new',
+        title: "What's new",
+        component: WhatsNewPage,
+        type: 'protected',
+        enterprise: true,
+        flag: 'whatsNewPage',
+        hidden: true,
+        menu: {},
     },
 
     // Project
@@ -579,19 +590,16 @@ export const routes: IRoute[] = [
         menu: {},
         isStandalone: true,
     },
-    ...(import.meta.env.DEV
-        ? [
-              {
-                  path: '/_stories',
-                  title: 'Stories',
-                  hidden: true,
-                  component: LazyStoriesPage,
-                  type: 'unprotected' as const,
-                  menu: {},
-                  isStandalone: true,
-              },
-          ]
-        : []),
+    {
+        path: '/_stories',
+        title: 'Stories',
+        hidden: true,
+        component: LazyStoriesPage,
+        type: 'protected',
+        menu: {},
+        isStandalone: true,
+        configFlag: 'storiesPageEnabled',
+    },
 ];
 
 export const getRoute = (path: string) =>
